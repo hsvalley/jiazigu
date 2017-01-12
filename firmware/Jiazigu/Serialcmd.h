@@ -6,6 +6,14 @@
 #define CMD_END_CHAR '>'
 #define CMD_SEPARE_CHAR ','
 
+#define RSP_OK '0'
+#define RSP_ERROR_LENGTH '1'
+#define RSP_ERROR_CHECKSUM '2'
+#define RSP_ERROR_NO_TIME '3'
+#define RSP_ERROR_UNKNOWN '4'
+
+
+
 enum {
   CMD_WORD_MIN =  'A',
   CMD_WORD_SETSERVO = CMD_WORD_MIN,
@@ -16,13 +24,13 @@ enum {
   CMD_WORD_GETSONG   ,
   CMD_WORD_RUN       ,
   CMD_WORD_STOP      ,
-  CMD_WORD_SETDELAY  ,
-  CMD_WORD_GETDELAY  ,
-  CMD_WORD_SETREPEAT  ,
-  CMD_WORD_GETREPEAT  ,
-  CMD_WORD_HEARTBEAT ,
+  CMD_WORD_SETCONFIG  ,
+  CMD_WORD_GETCONFIG  ,
+  CMD_WORD_SETREPEAT   ,
+  CMD_WORD_GETREPEAT   ,
+  CMD_WORD_HEARTBEAT   ,
   CMD_WORD_LOADEEPROM  ,
-  CMD_WORD_STOREEEPROM  ,
+  CMD_WORD_STOREEEPROM ,
   CMD_WORD_CLEAREEPROM ,
   CMD_WORD_MAX
 }cmd_word_types;
@@ -34,7 +42,6 @@ enum {
 extern char cmd_buffer[];
 extern int cmd_position;
 extern int cmd_state;
-
 
 void checkSerial();
 int parsecmd(char *cmd, int *num, int *parameters);

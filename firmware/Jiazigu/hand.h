@@ -17,6 +17,7 @@ class hand {
     //motor related functions
     void moveonemotor(int motor_index, int value);
     void moveallmotors(int values[]);
+    int getmotor(int motor_index);
     
     //drum related functions
     void setdrumbyvalue(int drum_index,int motor_index,int updown,int value);
@@ -33,7 +34,7 @@ class hand {
     
   private:
     valleystepper yaostepper;
-    valleystepper jianstepper;
+    valleyservo jianservo;
     valleyservo zhouservo;  
     valleyservo wanservo;  
 

@@ -7,6 +7,7 @@
 char cmd_buffer[CMD_MAX_LENGTH];
 int cmd_position = 0;
 int cmd_state = CMD_NOT_START;
+int response_buffer[10];
 
 #define __DEBUG_PRINT__
 //#define __FURTHER_CHECKING__
@@ -61,7 +62,7 @@ Servo gzhouservo;
 void setup()
 {
   Serial.begin(19200);
-  Serial.println("I am!");
+  Serial.println("I am coming!");
   lefthand.Init(0);
   //righthand = new hand(1);
   //  LoadEEPROM();
@@ -69,7 +70,7 @@ void setup()
 
 void LoadEEPROM()
 {
-  byte buf[128];
+  byte buf[268];
 
   //check the maggic code
   if ((EEPROM.read(0) == 'V') && (EEPROM.read(1) == 'A'))
@@ -79,6 +80,7 @@ void LoadEEPROM()
       buf[i] = EEPROM.read(i + 2);
     }
     lefthand.load(buf);
+
   }
 }
 
@@ -91,11 +93,33 @@ void StoreEEPROM()
   EEPROM.write(0, 'V');
   EEPROM.write(1, 'A');
   lefthand.store(buf);
-
   for (int i = 0; i < 128; i++)
   {
     EEPROM.write(i + 2, buf[i]);
   }
+  /*
+  righthand.store(&buf[128]);
+  for (int i = 0; i < 128; i++)
+  {
+    EEPROM.write(i + 130, buf[i]);
+  }
+  leftfoot.store(&buf[256]);
+  for (int i = 0; i < 4; i++)
+  {
+    EEPROM.write(i + 258, buf[i]);
+  }
+  rightfootstore(&buf[260]);
+  for (int i = 0; i < 4; i++)
+  {
+    EEPROM.write(i + 262, buf[i]);
+  }
+  head.store(&buf[264]);
+  for (int i = 0; i < 4; i++)
+  {
+    EEPROM.write(i + 266, buf[i]);
+  }
+  */
+
 }
 
 void ClearEEPROM()
@@ -282,6 +306,18 @@ int parsecmd(char *cmd, int *num, int *parameters)
   return 0;
 }
 
+void response(char command, int res_code,int len)
+{
+      Serial.print(CMD_START_CHAR);
+      Serial.print(command);
+      Serial.print(res_code);
+      for(int i=0;i<len;i++)
+      {
+        Serial.print(CMD_SEPARE_CHAR);
+        Serial.print(response_buffer[i]);
+      }
+      Serial.println(CMD_END_CHAR);
+}
 
 void runcommand()
 {
@@ -290,7 +326,7 @@ void runcommand()
   int paras[5];
   int ret;
   unsigned long now;
-
+   
   ret = parsecmd(&cmd, &numofpara, &paras[0]);
   if (ret < 0)
   {
@@ -305,19 +341,80 @@ void runcommand()
   switch (cmd)
   {
     case CMD_WORD_SETSERVO  :
-      if (2 == numofpara)
+      if (4 > paras[0])
       {
-        lefthand.moveonemotor(paras[0], paras[1]);
-        mystate = STATE_PLAYING;
+        //left hand
+        if (2 == numofpara)
+        {
+          lefthand.moveonemotor(paras[0], paras[1]);
+        }
+        else if (5 == numofpara)
+        {
+          lefthand.moveallmotors(&paras[1]);
+        }
       }
-      else if (4 == numofpara)
+      else if (8 > paras[0])
       {
-        lefthand.moveallmotors(&paras[0]);
-        mystate = STATE_PLAYING;
+        //right hand
+        if (2 == numofpara)
+        {
+          //righthand.moveonemotor(paras[0] - 4, paras[1]);
+        }
+        else if (5 == numofpara)
+        {
+          //righthand.moveallmotors(&paras[1]);
+        }
       }
+      else if (8 == paras[0])
+      {
+        //left foot
+        //leftfoot.moveonemotor(paras[1]);
+      }
+      else if (9 == paras[0])
+      {
+        //left foot
+        //rightfoot.moveonemotor(paras[1]);
+      }
+      else if (10 == paras[0])
+      {
+        //head
+        //head.moveonemotor(paras[1]);
+      }
+      mystate = STATE_PLAYING;
+      //response
+      response(cmd,RSP_OK,0);
+
       break;
 
     case CMD_WORD_GETSERVO  :
+   
+      if (4 > paras[0])
+      {
+        //left hand
+        response_buffer[0] = lefthand.getmotor(paras[0]);
+      }
+      else if (8 > paras[0])
+      {
+        //right hand
+        //response_buffer[0] = righthand.getmotor(paras[0] - 4);
+      }
+      else if (8 == paras[0])
+      {
+        //left foot
+        //response_buffer[0] = leftfoot.getpos();
+      }
+      else if (9 == paras[0])
+      {
+        //left foot
+        //response_buffer[0] = rightfoot.getpos();
+      }
+      else if (10 == paras[0])
+      {
+        //head
+        //thepos = head.getpos();
+      }
+      //response
+      response(cmd,RSP_OK,1);
       break;
 
     case CMD_WORD_SETDRUM   :
@@ -338,10 +435,10 @@ void runcommand()
     case CMD_WORD_STOP      :
       break;
 
-    case CMD_WORD_SETDELAY  :
+    case CMD_WORD_SETCONFIG  :
       break;
 
-    case CMD_WORD_GETDELAY  :
+    case CMD_WORD_GETCONFIG  :
       break;
 
     case CMD_WORD_SETREPEAT :
@@ -354,13 +451,16 @@ void runcommand()
     case CMD_WORD_HEARTBEAT :
       break;
 
-    case CMD_WORD_LOADEEPROM  ,
+    case CMD_WORD_LOADEEPROM:
+             LoadEEPROM();
       break;
 
-    case CMD_WORD_STOREEEPROM  ,
+    case CMD_WORD_STOREEEPROM:
+             StoreEEPROM();
       break;
 
-    case CMD_WORD_CLEAREEPROM ,
+    case CMD_WORD_CLEAREEPROM:
+             ClearEEPROM();
       break;
 
     default:
