@@ -3,13 +3,20 @@ import g4p_controls.*;
 
 import controlP5.*;
 import processing.serial.*;
+char sendbuffer[] = new char[256];
+int send_len=0;
+char receivebuffer[] = new char[256];
+int receive_len = 0;
+boolean start_received = false;
+int start_pos = 0;
+boolean end_received = false;
+int end_pos = 0;
 
+int connectted_color=color(26,179,45);
+int disconnectted_color=color(202,12,2);
 
-int connectted_color=color(128,128,0);
-int disconnectted_color=color(16,0,0);
+int currentTab=0;
 
-/*********MyScope********************/
-String g_sendData="";
 GWindow window;
 
 /******************************/
@@ -25,25 +32,13 @@ int currentPos = -1;
 
 /**********controlP5********************/
 ControlP5 cp5;
-Textarea serialErrorArea;
 //GDropList dropList_serial,dropList_baudRate,dropList_drums;
-Slider servoSlider0,servoSlider1,servoSlider2,servoSlider3;
+Slider lefthandservoSlider0,lefthandservoSlider1,lefthandservoSlider2,lefthandservoSlider3;
 
-Textlabel myStateTxt,myPeerStateTxt;
-
-void createNotes_serial() {
- serialErrorArea = cp5.addTextarea("serialError")
-    .setPosition(210, 28)
-    .setSize(600, 320)
-    .setText("\n\n你确定你的板子连接上了电脑吗？\n\n请检查！") 
-    .setColor(0xa8ff0000)
-    .setColorBackground(color(255, 255, 255))
-    .setFont(createFont("SimHei", 28));
-}
+Textlabel myStateTxt;
 
 public void setup() {
-  size(500, 300, JAVA2D);
-//  background(28, 170, 234);
+  size(480, 380, JAVA2D);
 
   cp5 = new ControlP5(this);
 
@@ -108,87 +103,103 @@ public void setup() {
   cp5.getController("connect").moveTo("default");
   cp5.getController("serialport_list").moveTo("default");
   cp5.getController("baudrate_list").moveTo("default");
-
-    
+cp5.get(ScrollableList.class, "serialport_list").close();
+cp5.get(ScrollableList.class, "baudrate_list").close();    
 /***********************************************************/     
 //controler for drums page
-  servoSlider0 = cp5.addSlider("servo0")
+  lefthandservoSlider0 = cp5.addSlider("lefthandservo0")
      .setBroadcast(false)
-     .setRange(500,2500)
+     .setRange(1420,1580)
      .setValue(1500)
-     .setPosition(10,20)
+     .setPosition(100,20)
      .setSize(200,20)
      .setBroadcast(true)
      ;
-  servoSlider1 = cp5.addSlider("servo1")
+  lefthandservoSlider1 = cp5.addSlider("lefthandservo1")
      .setBroadcast(false)
-     .setRange(500,2500)
+     .setRange(1000,2000)
      .setValue(1500)
-     .setPosition(10,50)
-     .setSize(200,20)
-     .setBroadcast(true)
-     ;
-     
-  servoSlider2 = cp5.addSlider("servo2")
-     .setBroadcast(false)
-     .setRange(500,2500)
-     .setValue(1500)
-     .setPosition(10,80)
+     .setPosition(100,42)
      .setSize(200,20)
      .setBroadcast(true)
      ;
      
-  servoSlider3 = cp5.addSlider("servo3")
+  lefthandservoSlider2 = cp5.addSlider("lefthandservo2")
      .setBroadcast(false)
-     .setRange(500,2500)
+     .setRange(1000,2000)
      .setValue(1500)
-     .setPosition(10,110)
+     .setPosition(100,64)
+     .setSize(200,20)
+     .setBroadcast(true)
+     ;
+     
+  lefthandservoSlider3 = cp5.addSlider("lefthandservo3")
+     .setBroadcast(false)
+     .setRange(800,2200)
+     .setValue(1500)
+     .setPosition(100,86)
      .setSize(200,20)
      .setBroadcast(true)
      ;
 
-  cp5.addScrollableList("alldrums_list")
-     .setPosition(300, 30)
-     .setSize(80, 180)
+  cp5.addScrollableList("lefthanddrums_list")
+     .setPosition(10, 20)
+     .setSize(80, 200)
      .setBarHeight(20)
      .setItemHeight(20)
      .addItems(loadStrings("drumlist"))
      .setType(ScrollableList.DROPDOWN) // currently supported DROPDOWN and LIST
      ;   
-   
-     
+  cp5.addButton("LoadEEPROM")
+     .setBroadcast(false)
+     .setPosition(386,30)
+     .setSize(80,20)
+     .setValue(1)
+     .setBroadcast(true)
+     .getCaptionLabel().align(CENTER,CENTER)
+     ;
+    cp5.addButton("StoreEEPROM")
+     .setBroadcast(false)
+     .setPosition(386,80)
+     .setSize(80,20)
+     .setValue(1)
+     .setBroadcast(true)
+     .getCaptionLabel().align(CENTER,CENTER)
+     ;   
   // arrange controller in separate tabs
-  cp5.getController("servo0").moveTo("drums");
-  cp5.getController("servo1").moveTo("drums");
-  cp5.getController("servo2").moveTo("drums");
-  cp5.getController("servo3").moveTo("drums");
-  cp5.getController("alldrums_list").moveTo("drums");
-  
+  cp5.getController("lefthandservo0").moveTo("drums");
+  cp5.getController("lefthandservo1").moveTo("drums");
+  cp5.getController("lefthandservo2").moveTo("drums");
+  cp5.getController("lefthandservo3").moveTo("drums");
+  cp5.getController("lefthanddrums_list").moveTo("drums");
+  cp5.getController("LoadEEPROM").moveTo("drums");
+  cp5.getController("StoreEEPROM").moveTo("drums");
+cp5.get(ScrollableList.class, "lefthanddrums_list").close();  
 /***********************************************************/     
 //controler for song page
   cp5.addTextfield("txtDelay1")
      .setPosition(10,20)
      .setSize(100,20)
-     .setFont(createFont("arial",16))
+     .setFont(createFont("arial",12))
      .setAutoClear(false)
      ;
    cp5.addTextfield("txtDelay2")
      .setPosition(10,60)
      .setSize(100,20)
-     .setFont(createFont("arial",16))
+     .setFont(createFont("arial",12))
      .setAutoClear(false)
      ; 
     cp5.addTextfield("txtrepeat")
      .setPosition(10,100)
      .setSize(100,20)
-     .setFont(createFont("arial",16))
+     .setFont(createFont("arial",12))
      .setAutoClear(false)
      ;       
      
     cp5.addTextfield("txtsong")
      .setPosition(10,170)
      .setSize(400,20)
-     .setFont(createFont("arial",16))
+     .setFont(createFont("arial",12))
      .setAutoClear(false)
      ;       
           
@@ -207,20 +218,12 @@ public void setup() {
 
 /*******Common controller***************************************************/     
 myStateTxt = cp5.addTextlabel("state")
-                    .setPosition(10,280)
+                    .setPosition(200,3)
                     .setText("Current state")
                     .setColorValue(0xffffff00)
-                    .setFont(createFont("Georgia",16));
-                    
-myPeerStateTxt = cp5.addTextlabel("peerstate")
-                    .setPosition(200,280)
-                    .setText("Current peer state")
-                    .setColorValue(0xffffff00)
-                    .setFont(createFont("Georgia",16))                   
-                    ;
+                    .setFont(createFont("Georgia",12));
                     
   cp5.getController("state").moveTo("global");
-  cp5.getController("peerstate").moveTo("global");
 /********Data handle***************************************************/     
  
   myDrums = new MyAllDrums();
@@ -229,9 +232,33 @@ myPeerStateTxt = cp5.addTextlabel("peerstate")
 }
 
 public void draw() {
-  background(isConnected?disconnectted_color:connectted_color);
-  fill(color(128,64,64));
+  
+  if(isConnected)  
+    fill(connectted_color);
+  else
+    fill(disconnectted_color);
   rect(0,0,width,18);
+  
+   if(2==currentTab)
+  {
+    //default
+    fill(color(9,152,193));
+    rect(0,20,width-100,90);
+    fill(color(122,221,250));
+    rect(0,110,width-100,90); 
+    fill(color(9,152,193));
+    rect(0,200,width-100,30); 
+    fill(color(122,221,250));
+    rect(0,230,width-100,30); 
+  }
+  else 
+  {
+    //song
+    fill(color(185,192,249));
+    rect(0,18,width,height-18);  
+  }
+  
+  
 }
 
 
@@ -239,6 +266,7 @@ public void draw() {
 void controlEvent(ControlEvent theControlEvent) {
   if (theControlEvent.isTab()) {
     println("got an event from tab : "+theControlEvent.getTab().getName()+" with id "+theControlEvent.getTab().getId());
+    currentTab=theControlEvent.getTab().getId();
   }
 }
 
@@ -249,7 +277,7 @@ void baudrate_list(int pos) {
   baudrateIndex = pos;
 }
 
-void alldrums_list(int pos) {
+void lefthanddrums_list(int pos) {
 //lode the servo values
 //check if pos is valid
   int value;
@@ -259,23 +287,24 @@ void alldrums_list(int pos) {
   currentPos = pos;
   
   value = myDrums.getDrumPos(pos,0);
-  servoSlider0.setValue(value);
+  lefthandservoSlider0.setValue(value);
 //  setRealServo(0,value);
   
   value = myDrums.getDrumPos(pos,1);
-  servoSlider1.setValue(value);
+  lefthandservoSlider1.setValue(value);
 //  setRealServo(1,value);
   
   value = myDrums.getDrumPos(pos,2);
-  servoSlider2.setValue(value);
+  lefthandservoSlider2.setValue(value);
 //  setRealServo(2,value);
   
   value = myDrums.getDrumPos(pos,3);
-  servoSlider3.setValue(value);
+  lefthandservoSlider3.setValue(value);
 //  setRealServo(3,value);
+
 }
 
-void servo0(int newvalue)
+void lefthandservo0(int newvalue)
 {
   if(isConnected == false)
   {
@@ -283,11 +312,10 @@ void servo0(int newvalue)
   }
   else
   {
+    myStateTxt.setText("Connectted");
     setRealServo(0,newvalue);
   }
-  
-  
-  if(currentPos<0) 
+   if(currentPos<0) 
   {
     return;
   }
@@ -298,7 +326,7 @@ void servo0(int newvalue)
 }
 
 
-void servo1(int newvalue)
+void lefthandservo1(int newvalue)
 {
   if(isConnected == false)
   {
@@ -306,6 +334,7 @@ void servo1(int newvalue)
   }
   else
   {
+    myStateTxt.setText("Connectted");
     setRealServo(1,newvalue);
   }
   
@@ -319,7 +348,7 @@ void servo1(int newvalue)
 }
 
 
-void servo2(int newvalue)
+void lefthandservo2(int newvalue)
 {
   if(isConnected == false)
   {
@@ -327,6 +356,7 @@ void servo2(int newvalue)
   }
   else
   {
+        myStateTxt.setText("Connectted");
     setRealServo(2,newvalue);
   }
   
@@ -340,7 +370,7 @@ void servo2(int newvalue)
 }
 
 
-void servo3(int newvalue)
+void lefthandservo3(int newvalue)
 {
   if(isConnected == false)
   {
@@ -348,6 +378,7 @@ void servo3(int newvalue)
   }
   else
   {
+    myStateTxt.setText("Connectted");
     setRealServo(3,newvalue);
   }
   
@@ -367,7 +398,7 @@ void keyPressed() {
 }
 
 //buttons handle
-public void connect(int theValue) {
+public void connect() {
 int br[]={9600,14400,19200,28800,38400,57600,115200};
 
   if(serialIndex<0 | baudrateIndex<0)
@@ -384,6 +415,7 @@ int br[]={9600,14400,19200,28800,38400,57600,115200};
     }
     isConnected = false;
     cp5.getController("connect").setCaptionLabel("Connect");
+    myStateTxt.setText("Serial port unconnected!");
   }else{
     try {
     myPort = new Serial(this,Serial.list()[serialIndex] ,br[baudrateIndex]);
@@ -394,9 +426,8 @@ int br[]={9600,14400,19200,28800,38400,57600,115200};
   }
     isConnected = true;
     cp5.getController("connect").setCaptionLabel("Disconnect");
+    myStateTxt.setText("Serial port connected!");
   }
-  
-  myStateTxt.setText("Serial port connected!");
   
 }
 
@@ -404,7 +435,8 @@ public void runsong()
 {
   String str = new String();
   int data;
-
+  int ret;
+  
   if(isConnected == false)
   {
     myStateTxt.setText("Serial port is unconnected!");
@@ -422,7 +454,8 @@ public void runsong()
     myStateTxt.setText("error delay1!");
     return;
   }
-  setDelay(0, data);
+  ret = setConfig(0, data);
+  if (ret !=0) return;
   
   str = cp5.get(Textfield.class,"txtDelay2").getText();
   if(str.length() <= 0 )  {
@@ -435,7 +468,7 @@ public void runsong()
     myStateTxt.setText("error delay2!");
     return;
   }
-  setDelay(1,data);
+  setConfig(1,data);
   
   str = cp5.get(Textfield.class,"txtrepeat").getText();
   if(str.length() <= 0 )  {
@@ -448,8 +481,9 @@ public void runsong()
     myStateTxt.setText("error repeat!");
     return;
   }
-  setRepeat(data);
-  
+  ret = setConfig(2,data);
+  if (ret !=0) return;
+    
   int validtone=0;
   str = cp5.get(Textfield.class,"txtsong").getText();
   for(int i=0;i<str.length();i++)
@@ -460,7 +494,8 @@ public void runsong()
     {
       //valid char
       validtone++;
-      setSong(i,thechar);
+      ret = setSong(i,thechar);
+      if (ret !=0) return;
     }
   }
   if(0==validtone)
@@ -469,23 +504,73 @@ public void runsong()
   }
   else
   {
-    startRun(validtone);
+    ret = startRun(validtone);
+    if (ret !=0) return;
   }
   
 }
 
-void serialEvent(Serial myPort) {
-  int head=0;
-  String g_inString = new String(); //<>//
+public void LoadEEPROM() {
+  int newvalues[] = new int[4];
   
+  if(isConnected == false)
+  {
+    myStateTxt.setText("Serial port is unconnected!");
+    return;
+  }
+  loadTheEEPROM();
+  
+  for(int drum_id=0;drum_id<NumOfDrums;drum_id++)
+  {
+    if(0==getDrum(drum_id,0,newvalues))
+    {//up
+      for(int i=0;i<4;i++) myDrums.setDrumPos(drum_id*2,i,newvalues[i]);
+    } 
+    if(0==getDrum(drum_id,1,newvalues))
+    {//down
+      for(int i=0;i<4;i++) myDrums.setDrumPos(drum_id*2+1,i,newvalues[i]);
+    } 
+  }
+  
+  if(currentPos>=0)
+  {
+     lefthandservoSlider0.setValue(myDrums.getDrumPos(currentPos,0));
+     lefthandservoSlider1.setValue(myDrums.getDrumPos(currentPos,1));
+     lefthandservoSlider2.setValue(myDrums.getDrumPos(currentPos,2));
+     lefthandservoSlider3.setValue(myDrums.getDrumPos(currentPos,3));
+  }
+
+  
+}
+
+public void StoreEEPROM() {
+  storeTheEEPROM();
+}
+
+
+void serialEvent(Serial myPort) {
+char inByte;
+ //<>//
   try {
-    if(myPort.available() > 0) 
+    while(myPort.available() > 0) 
     {
-        g_inString = myPort.readStringUntil('\n');
+        inByte = (char)myPort.read();
+        print(inByte);
+        receivebuffer[receive_len]=inByte;
+        if(CMD_START_CHAR == inByte) 
+        {
+            start_received = true;
+            start_pos = receive_len;
+        }
+        if(CMD_END_CHAR == inByte) 
+        {
+          end_received = true;
+          end_pos = receive_len;
+        }
+        if(receive_len < 255) receive_len++;
     }
-    myPeerStateTxt.setText(g_inString);
   }
   catch (Exception e) {
-    myStateTxt.setText("catch a Error ");
+    myStateTxt.setText("catch a Serial port Error ");
   }
 }

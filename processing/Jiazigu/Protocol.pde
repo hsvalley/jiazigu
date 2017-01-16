@@ -4,19 +4,38 @@ final static char CMD_START_CHAR = '<';
 final static char CMD_END_CHAR = '>';
 final static char CMD_SEPARE_CHAR = ',';
 
-final static int CMD_WORD_SETSERVO = 'A';
-final static int CMD_WORD_GETSERVO = 'B';
-final static int CMD_WORD_SETDRUM  = 'C';
-final static int CMD_WORD_GETDRUM  = 'D';
-final static int CMD_WORD_SETSONG  = 'E';
-final static int CMD_WORD_GETSONG  = 'F';
-final static int CMD_WORD_RUN      = 'G';
-final static int CMD_WORD_STOP     = 'H';
-final static int CMD_WORD_SETDELAY = 'I';
-final static int CMD_WORD_GETDELAY = 'J';
-final static int CMD_WORD_SETREPEAT = 'K';
-final static int CMD_WORD_GETREPEAT = 'L';
-final static int CMD_WORD_HEARTBEAT = 'M';
+final static char  RSP_OK = '0';
+final static char  RSP_ERROR_LENGTH = '1';
+final static char  RSP_ERROR_CHECKSUM = '2';
+final static char  RSP_ERROR_BUSY = '3';
+final static char  RSP_ERROR_UNKNOWN = '4';
+
+final static char CMD_WORD_SETSERVO = 'A';
+final static char CMD_WORD_GETSERVO = 'B';
+final static char CMD_WORD_SETDRUM  = 'C';
+final static char CMD_WORD_GETDRUM  = 'D';
+final static char CMD_WORD_SETSONG  = 'E';
+final static char CMD_WORD_GETSONG  = 'F';
+final static char CMD_WORD_RUN      = 'G';
+final static char CMD_WORD_STOP     = 'H';
+final static char CMD_WORD_SETCONFIG = 'I';
+final static char CMD_WORD_GETCONFIG = 'J';
+final static char CMD_WORD_HEARTBEAT = 'K';
+final static char CMD_WORD_LOADEEPROM = 'L';
+final static char CMD_WORD_STOREEEPROM = 'M';
+final static char CMD_WORD_CLEAREEPROM = 'N';
+
+int ret_code = 0;
+int ret_values[] = new int [10];
+
+void clearSerial()
+{
+  receive_len = 0;
+  start_received = false;
+  end_received = false;
+  send_len = 0;
+  sendbuffer[send_len++] = CMD_START_CHAR;
+}
 
 void writeSerialData(int data)
 {
@@ -36,66 +55,196 @@ void writeSerialData(int data)
   
   for(int i=1;i<=weishu;i++)
   {
-    myPort.write('0' + buffer[weishu - i]);
+    sendbuffer[send_len++] = (char)('0' + buffer[weishu - i]);
   }
 }
 
-void setRealServo(int servo_index,int value)
+int sendandcheck(int expected_num)
 {
-  myPort.write(CMD_START_CHAR);
-  myPort.write(CMD_WORD_SETSERVO);
+  int starttime;
+  int para_num=0;
+  int search_index;
+  
+  for(int i=0;i<send_len;i++)
+  {
+    myPort.write(sendbuffer[i]);
+    print(sendbuffer[i]);
+  }
+  starttime = millis();
+  while((millis() - starttime)<1000)
+  {
+    if(end_received && start_received)  
+    {
+      if(receivebuffer[start_pos+1] != sendbuffer[1]) return -1;  //returned command is incorrect
+      if(receivebuffer[start_pos+2] != '0') 
+      {
+        ret_code = receivebuffer[start_pos+2];
+        return -2;
+      }
+      search_index = start_pos+3;
+      while(search_index < end_pos)
+      {
+        if(CMD_SEPARE_CHAR == receivebuffer[search_index])
+        {
+          ret_values[para_num] = 0;
+          para_num ++;
+        }
+        else if (receivebuffer[search_index] >= '0' && receivebuffer[search_index] <= '9')
+        {
+          ret_values[para_num-1] = ret_values[para_num-1] * 10 + (receivebuffer[search_index]-'0');
+        }
+        search_index++;
+      }
+      if(para_num != expected_num) return -3; //the return parameters number is not expected.
+      return 0;  //return ok
+    }
+    delay(1);
+  }
+  
+  return -4;  //timeout //<>//
+  
+}
+
+
+//commands
+int setRealServo(int servo_index,int value)
+{
+  int ret;
+  myPort.clear();
+  clearSerial();
+
+  sendbuffer[send_len++] = CMD_WORD_SETSERVO;
   writeSerialData(servo_index);
-  myPort.write(CMD_SEPARE_CHAR);
+  sendbuffer[send_len++] = (CMD_SEPARE_CHAR);
   writeSerialData(value);
-  myPort.write(CMD_END_CHAR);
+  sendbuffer[send_len++] = (CMD_END_CHAR);
+  
+  ret = sendandcheck(0);
+  
+  if(0!=ret)
+  {
+    print(ret);
+    print(char(ret_code));
+  }
+  return ret; 
 }
 
-void setDrum(int drum_id, int updown, int servo_id,int value)
+int setDrum(int drum_id, int updown, int servo_id,int value)
 {
-  myPort.write(CMD_START_CHAR);
-  myPort.write(CMD_WORD_SETDRUM);
+  int ret;
+  
+  myPort.clear();
+  clearSerial();
+  sendbuffer[send_len++] = (CMD_WORD_SETDRUM);
   writeSerialData(drum_id);  
-  myPort.write(CMD_SEPARE_CHAR);
+  sendbuffer[send_len++] = (CMD_SEPARE_CHAR);
   writeSerialData(updown); //0,up,1,down
-  myPort.write(CMD_SEPARE_CHAR);
+  sendbuffer[send_len++] = (CMD_SEPARE_CHAR);
   writeSerialData(servo_id);  
-  myPort.write(CMD_SEPARE_CHAR);
+  sendbuffer[send_len++] = (CMD_SEPARE_CHAR);
   writeSerialData(value);
-  myPort.write(CMD_END_CHAR);  
+  sendbuffer[send_len++] = (CMD_END_CHAR); 
+  ret = sendandcheck(0);
+  if(0!=ret)
+  {
+    print(ret);
+    print(char(ret_code));
+  }
+  return ret; 
+  
 }
 
-void setDelay(int index, int value)
+int getDrum(int drum_id, int updown,int values[])
 {
-  myPort.write(CMD_START_CHAR);
-  myPort.write(CMD_WORD_SETDELAY);
+  int ret;
+  
+  myPort.clear();
+  clearSerial();
+  sendbuffer[send_len++] = (CMD_WORD_GETDRUM);
+  writeSerialData(drum_id);  
+  sendbuffer[send_len++] = (CMD_SEPARE_CHAR);
+  writeSerialData(updown); //0,up,1,down
+  sendbuffer[send_len++] = (CMD_END_CHAR);
+  ret = sendandcheck(4);
+  if(0!=ret)
+  {
+    print(ret);
+    print(char(ret_code));
+  }
+  return ret; 
+}
+
+int setConfig(int index, int value)
+{
+  int ret;
+  myPort.clear();
+  clearSerial();
+  sendbuffer[send_len++] = (CMD_WORD_SETCONFIG);
   writeSerialData(index);
-  myPort.write(CMD_SEPARE_CHAR);
+  sendbuffer[send_len++] = (CMD_SEPARE_CHAR);
   writeSerialData(value);
-  myPort.write(CMD_END_CHAR);
+  sendbuffer[send_len++] = (CMD_END_CHAR);
+  ret = sendandcheck(0);
+  if(0!=ret)
+  {
+    print(ret);
+    print(char(ret_code));
+  }
+  return ret; 
 }
 
-void setRepeat(int value)
+int setSong(int index, char drum_id)
 {
-  myPort.write(CMD_START_CHAR);
-  myPort.write(CMD_WORD_SETREPEAT);
-  writeSerialData(value);
-  myPort.write(CMD_END_CHAR);
-}
-
-void setSong(int index, char drum_id)
-{
-  myPort.write(CMD_START_CHAR);
-  myPort.write(CMD_WORD_SETSONG);
+  int ret;
+  myPort.clear();
+  clearSerial();
+  sendbuffer[send_len++] = (CMD_WORD_SETSONG);
   writeSerialData(index);
-  myPort.write(CMD_SEPARE_CHAR);
-  myPort.write(drum_id);
-  myPort.write(CMD_END_CHAR);
+  sendbuffer[send_len++] = (CMD_SEPARE_CHAR);
+  sendbuffer[send_len++] = drum_id;
+  sendbuffer[send_len++] = (CMD_END_CHAR);
+  
+  ret = sendandcheck(0);
+  if(0!=ret)
+  {
+    print(ret);
+    print(char(ret_code));
+  }
+  return ret; 
 }
 
-void startRun(int count)
+int startRun(int count)
 {
-  myPort.write(CMD_START_CHAR);
-  myPort.write(CMD_WORD_RUN);
+  int ret;
+  
+  myPort.clear();
+  clearSerial();
+  sendbuffer[send_len++] = (CMD_WORD_RUN);
   writeSerialData(count);  
-  myPort.write(CMD_END_CHAR);
+  sendbuffer[send_len++] = (CMD_END_CHAR);
+  ret = sendandcheck(0);
+  if(0!=ret)
+  {
+    print(ret);
+    if(ret == -2) print(char(ret_code));
+  }
+  return ret; 
+}
+
+int loadTheEEPROM()
+{
+  myPort.clear();
+  clearSerial();
+  sendbuffer[send_len++] = (CMD_WORD_LOADEEPROM);
+  sendbuffer[send_len++] = (CMD_END_CHAR);
+  return 0;
+}
+
+int storeTheEEPROM()
+{
+  myPort.clear();
+  clearSerial();
+  sendbuffer[send_len++] = (CMD_WORD_STOREEEPROM);
+  sendbuffer[send_len++] = (CMD_END_CHAR);
+  return 0;
 }
