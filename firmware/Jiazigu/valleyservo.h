@@ -2,6 +2,8 @@
 #define valleyservo_h
 #include <Servo.h>
 
+#define INIT_POS 1500
+
 // library interface description
 class valleyservo {
   public:
@@ -9,17 +11,13 @@ class valleyservo {
     valleyservo();
     void Init(int pin,int mindelay);
     bool gotarget();
-    void settarget_relative(int steps);
-    void settarget_abs(int steps);
+    int settarget_abs(int steps);
     int getpos();
     
   private:
     int min_delay;      // the minimam tolarent delay
     Servo thisservo;
     
-    //state,0:init;1,qualified;2,running
-    int state;  
-
     int cur_pos;
     int target_pos;
     

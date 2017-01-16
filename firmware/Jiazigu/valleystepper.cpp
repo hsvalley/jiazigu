@@ -12,8 +12,6 @@
 #include "Arduino.h"
 #include "valleystepper.h"
 
-#define INIT_POS 1500
-
 valleystepper::valleystepper()
 {
 
@@ -31,8 +29,8 @@ void valleystepper::Init(int pin_1, int pin_2, int minidelay)
 
   this->min_delay = minidelay;
 
-  state = 0;
   this->cur_pos = INIT_POS; //unknown position, assume one
+  this->target_pos = INIT_POS;
   this->last_step_time = millis();
 
 }
@@ -41,9 +39,6 @@ extern int debug_code2;
 
 void valleystepper::stepMotor(int thisStep)
 {
-  debug_code1++;
-  debug_code2 +=thisStep;
-  
   switch (thisStep) {
     case 0:  // 01
       digitalWrite(this->motor_pin_1, LOW);
@@ -97,26 +92,23 @@ int valleystepper::backonestep()
 
 bool valleystepper::gotarget()  //run once
 {
-  bool unfinished = true;
+  bool isrunning = true;
 
   if (this->cur_pos < this->target_pos)
     goonestep();
   else if (this->cur_pos > this->target_pos)
     backonestep();
   else
-    unfinished = false;
+    isrunning = false;
 
-  return unfinished;
+  return isrunning;
 
 }
 
-void valleystepper::settarget_relative(int steps)
+int valleystepper::settarget_abs(int steps)
 {
-  this->target_pos = this->cur_pos + steps;
-}
-
-void valleystepper::settarget_abs(int steps)
-{
+  if(steps < 1400 || steps > 1600) return -1;
   this->target_pos = steps;
+  return 0;
 }
 

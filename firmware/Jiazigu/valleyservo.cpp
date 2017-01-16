@@ -1,7 +1,6 @@
 #include "Arduino.h"
 #include "valleyservo.h"
 
-#define INIT_POS 1500
 valleyservo::valleyservo()
 {
   
@@ -16,8 +15,8 @@ void valleyservo::Init(int pin, int minidelay)
   
   min_delay = minidelay;
   
-  state = 0;
   cur_pos = INIT_POS;
+  target_pos = INIT_POS;
   
   thisservo.write(cur_pos);
   last_step_time = millis();
@@ -31,29 +30,23 @@ int valleyservo::getpos()
 
 bool valleyservo::gotarget()  //run once
 {
+  //return if it is in running
   if (millis() >= last_step_time) 
   {
     cur_pos = target_pos;
-    return false;
+    return false; //not running
   }
   else
-    return true;
+    return true; //rnnning
 
 }
 
-void valleyservo::settarget_relative(int steps)
+int valleyservo::settarget_abs(int steps)
 {
-  target_pos = cur_pos + steps;
-  thisservo.write(target_pos);
-  last_step_time = millis() + min_delay * abs(target_pos - cur_pos)/10;
-
-}
-
-void valleyservo::settarget_abs(int steps)
-{
+  if (steps < 800 || steps >2200) return -1;
   target_pos = steps;
   thisservo.write(target_pos);
   last_step_time = millis() + min_delay * abs(target_pos - cur_pos)/10;
-
+  return 0;
 }
 

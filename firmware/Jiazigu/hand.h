@@ -15,15 +15,15 @@ class hand {
     void Init(int lefgright);
     
     //motor related functions
-    void moveonemotor(int motor_index, int value);
-    void moveallmotors(int values[]);
+    int moveonemotor(int motor_index, int value);
+    int moveallmotors(int values[]);
     int getmotor(int motor_index);
     
     //drum related functions
-    void setdrumbyvalue(int drum_index,int motor_index,int updown,int value);
-    void setdrumbypos(int drum_index,int updown);
-    int getdrum(int drum_index,int motor_index, int updown);
-    void movemotorstodrum(int drum_index,int updown);
+    int setdrumbyvalue(int drum_index,int updown, int motor_index,int value);
+    int setdrumbypos(int drum_index,int updown);
+    int getdrum(int drum_index, int updown, int values[]);
+    int movemotorstodrum(int drum_index,int updown);
     
     //playing function
     bool gotarget();
@@ -39,7 +39,7 @@ class hand {
     valleyservo wanservo;  
 
     //drum
-    int drums[MAXDRUMS][MAXMOTORS][2];
+    int drums[MAXDRUMS][2][MAXMOTORS];
     
 };
 

@@ -4,6 +4,7 @@
 #include "Serialcmd.h"
 #include "hand.h"
 
+
 char cmd_buffer[CMD_MAX_LENGTH];
 int cmd_position = 0;
 int cmd_state = CMD_NOT_START;
@@ -47,7 +48,8 @@ int NumOfCmd[CMD_WORD_MAX - CMD_WORD_MIN] = {
 
 #define STATE_INIT 0
 #define STATE_READY 1
-#define STATE_PLAYING 2
+#define STATE_SETTING 2
+#define STATE_RUNNING 3
 
 byte mystate;
 
@@ -56,13 +58,28 @@ hand lefthand;
 //foot *leftfoot;
 //foot *rightfoot;
 
-Servo gwanservo;
-Servo gzhouservo;
+#define NUM_OF_SYS_PARAS 5
+int sys_paras[NUM_OF_SYS_PARAS];
+
+//definition for song
+#define SONG_RUNNING_BEFORE_UP 0
+#define SONG_RUNNING_IN_UP 1
+#define SONG_RUNNING_BEFORE_DOWN 2
+#define SONG_RUNNING_IN_DOWN 3
+
+#define SONG_MAX_LENGTH 256
+int song_pu[SONG_MAX_LENGTH];
+int song_len;
+int song_running_pos = 0;
+int song_finished_count = 0;
+int song_running_state = SONG_RUNNING_BEFORE_UP;
 
 void setup()
 {
-  Serial.begin(19200);
+  Serial.begin(115200);
   Serial.println("I am coming!");
+  mystate = STATE_INIT;
+
   lefthand.Init(0);
   //righthand = new hand(1);
   //  LoadEEPROM();
@@ -131,22 +148,63 @@ void ClearEEPROM()
 
 void loop()
 {
-  static unsigned long count = 0;
-  char temp;
   checkSerial();
-  count++;
-  if (count == 300000)
-  {
-    count = 0;
 
-    Serial.println(debug_code1);
-    Serial.println(debug_code2);
-  }
-
-  if (STATE_PLAYING == mystate)
+  if (STATE_SETTING == mystate)
   {
-    lefthand.gotarget();
+    if (!lefthand.gotarget())
+      mystate = STATE_READY;
   }
+  else if (STATE_RUNNING == mystate)
+  {
+    if (!lefthand.gotarget())
+    {
+      switch(song_running_state)
+      {
+      case SONG_RUNNING_BEFORE_UP:
+        delay(sys_paras[1]);
+        //Start UP
+        lefthand.movemotorstodrum(song_pu[song_running_pos],0);
+        song_running_state = SONG_RUNNING_IN_UP;
+      break;
+      case SONG_RUNNING_IN_UP :
+        //finish UP
+        song_running_state = SONG_RUNNING_BEFORE_DOWN;
+      break;
+      case SONG_RUNNING_BEFORE_DOWN:
+        delay(sys_paras[0]);
+        //start DOWN
+        lefthand.movemotorstodrum(song_pu[song_running_pos],1);
+        song_running_state = SONG_RUNNING_IN_DOWN;
+      break;
+      case SONG_RUNNING_IN_DOWN :
+        //finish DOWN, to judge if the song is over
+        song_running_pos ++;
+        if(song_len == song_running_pos)
+        {
+          //arrived the end of song
+          song_running_pos = 0;
+          song_finished_count ++;
+          if (song_finished_count == sys_paras[2])
+          {
+            mystate = STATE_READY; //finish repeat times, stop playing
+          }
+          else
+          {
+            song_running_state = SONG_RUNNING_BEFORE_UP; //continue
+          }
+        }
+        else
+        {
+            song_running_state = SONG_RUNNING_BEFORE_UP; //continue
+        }
+      break;
+      default:
+      break;
+      }
+    }
+  }
+  
 }
 
 void checkSerial()
@@ -306,17 +364,17 @@ int parsecmd(char *cmd, int *num, int *parameters)
   return 0;
 }
 
-void response(char command, int res_code,int len)
+void response(char command, char res_code, int len)
 {
-      Serial.print(CMD_START_CHAR);
-      Serial.print(command);
-      Serial.print(res_code);
-      for(int i=0;i<len;i++)
-      {
-        Serial.print(CMD_SEPARE_CHAR);
-        Serial.print(response_buffer[i]);
-      }
-      Serial.println(CMD_END_CHAR);
+  Serial.print(CMD_START_CHAR);
+  Serial.print(command);
+  Serial.print(res_code);
+  for (int i = 0; i < len; i++)
+  {
+    Serial.print(CMD_SEPARE_CHAR);
+    Serial.print(response_buffer[i]);
+  }
+  Serial.println(CMD_END_CHAR);
 }
 
 void runcommand()
@@ -326,7 +384,7 @@ void runcommand()
   int paras[5];
   int ret;
   unsigned long now;
-   
+
   ret = parsecmd(&cmd, &numofpara, &paras[0]);
   if (ret < 0)
   {
@@ -341,126 +399,72 @@ void runcommand()
   switch (cmd)
   {
     case CMD_WORD_SETSERVO  :
-      if (4 > paras[0])
-      {
-        //left hand
-        if (2 == numofpara)
-        {
-          lefthand.moveonemotor(paras[0], paras[1]);
-        }
-        else if (5 == numofpara)
-        {
-          lefthand.moveallmotors(&paras[1]);
-        }
-      }
-      else if (8 > paras[0])
-      {
-        //right hand
-        if (2 == numofpara)
-        {
-          //righthand.moveonemotor(paras[0] - 4, paras[1]);
-        }
-        else if (5 == numofpara)
-        {
-          //righthand.moveallmotors(&paras[1]);
-        }
-      }
-      else if (8 == paras[0])
-      {
-        //left foot
-        //leftfoot.moveonemotor(paras[1]);
-      }
-      else if (9 == paras[0])
-      {
-        //left foot
-        //rightfoot.moveonemotor(paras[1]);
-      }
-      else if (10 == paras[0])
-      {
-        //head
-        //head.moveonemotor(paras[1]);
-      }
-      mystate = STATE_PLAYING;
-      //response
-      response(cmd,RSP_OK,0);
-
+      cmdsetmotors(cmd, numofpara, &paras[0]);
       break;
 
     case CMD_WORD_GETSERVO  :
-   
-      if (4 > paras[0])
-      {
-        //left hand
-        response_buffer[0] = lefthand.getmotor(paras[0]);
-      }
-      else if (8 > paras[0])
-      {
-        //right hand
-        //response_buffer[0] = righthand.getmotor(paras[0] - 4);
-      }
-      else if (8 == paras[0])
-      {
-        //left foot
-        //response_buffer[0] = leftfoot.getpos();
-      }
-      else if (9 == paras[0])
-      {
-        //left foot
-        //response_buffer[0] = rightfoot.getpos();
-      }
-      else if (10 == paras[0])
-      {
-        //head
-        //thepos = head.getpos();
-      }
-      //response
-      response(cmd,RSP_OK,1);
+      cmdgetmotors(cmd, &paras[0]);
       break;
 
     case CMD_WORD_SETDRUM   :
+      cmdsetdrum(cmd,&paras[0]);
       break;
 
     case CMD_WORD_GETDRUM   :
+      cmdgetdrum(cmd,&paras[0]);
       break;
 
     case CMD_WORD_SETSONG   :
+      cmdsetsong(cmd,&paras[0]);
       break;
 
     case CMD_WORD_GETSONG   :
+      cmdgetsong(cmd,&paras[0]);
       break;
 
     case CMD_WORD_RUN   :
+      if(paras[0]>SONG_MAX_LENGTH) 
+      {
+        response(cmd, RSP_ERROR_PARAMETER, 0);
+      }
+      else
+      {
+        song_len = paras[0];
+        mystate = STATE_RUNNING;
+        song_running_pos = 0;
+        song_finished_count = 0;
+        song_running_state = SONG_RUNNING_BEFORE_UP;
+        response(cmd, RSP_OK, 0);
+      }
       break;
 
     case CMD_WORD_STOP      :
+    //TEMP add debug code
+      Serial.println(debug_code1);
+      Serial.println(debug_code2);
       break;
 
     case CMD_WORD_SETCONFIG  :
+      cmdsetconfig(cmd,&paras[0]);
       break;
 
     case CMD_WORD_GETCONFIG  :
-      break;
-
-    case CMD_WORD_SETREPEAT :
-      //0:repeat
-      break;
-
-    case CMD_WORD_GETREPEAT :
+      cmdgetconfig(cmd,&paras[0]);
       break;
 
     case CMD_WORD_HEARTBEAT :
       break;
 
     case CMD_WORD_LOADEEPROM:
-             LoadEEPROM();
+      LoadEEPROM();
       break;
 
     case CMD_WORD_STOREEEPROM:
-             StoreEEPROM();
+      StoreEEPROM();
       break;
 
     case CMD_WORD_CLEAREEPROM:
-             ClearEEPROM();
+      ClearEEPROM();
       break;
 
     default:
@@ -469,3 +473,156 @@ void runcommand()
   cmd_state = CMD_NOT_START;
 }
 
+
+void cmdsetmotors(char cmd, int num, int parameters[])
+{
+  int rsp;
+  if (4 > parameters[0])
+  {
+    //left hand
+    if (2 == num)
+    {
+      rsp = lefthand.moveonemotor(parameters[0], parameters[1]); //move to one motor
+    }
+    else if (5 == num)
+    {
+      rsp = lefthand.moveallmotors(&parameters[1]);
+    }
+  }
+  else if (8 > parameters[0])
+  {
+    //right hand
+    if (2 == num)
+    {
+      //righthand.moveonemotor(parameters[0] - 4, parameters[1]);
+    }
+    else if (5 == num)
+    {
+      //righthand.moveallmotors(&parameters[1]);
+    }
+  }
+  else if (8 == parameters[0])
+  {
+    //left foot
+    //leftfoot.moveonemotor(parameters[1]);
+  }
+  else if (9 == parameters[0])
+  {
+    //left foot
+    //rightfoot.moveonemotor(parameters[1]);
+  }
+  else if (10 == parameters[0])
+  {
+    //head
+    //head.moveonemotor(parameters[1]);
+  }
+  mystate = STATE_SETTING;
+  //response
+  if(0==rsp)
+  response(cmd, RSP_OK, 0);
+  else
+  response(cmd, RSP_ERROR_PARAMETER, 0);
+
+}
+
+void cmdgetmotors(char cmd, int parameters[])
+{
+  if (4 > parameters[0])
+  {
+    //left hand
+    response_buffer[0] = lefthand.getmotor(parameters[0]);
+  }
+  else if (8 > parameters[0])
+  {
+    //right hand
+    //response_buffer[0] = righthand.getmotor(parameters[0] - 4);
+  }
+  else if (8 == parameters[0])
+  {
+    //left foot
+    //response_buffer[0] = leftfoot.getpos();
+  }
+  else if (9 == parameters[0])
+  {
+    //left foot
+    //response_buffer[0] = rightfoot.getpos();
+  }
+  else if (10 == parameters[0])
+  {
+    //head
+    //response_buffer = head.getpos();
+  }
+  //response
+  response(cmd, RSP_OK, 1);
+}
+
+void cmdsetdrum(char cmd, int parameters[])
+{
+  int ret;
+  ret = lefthand.setdrumbyvalue(parameters[0],parameters[1],parameters[2],parameters[3]);
+  if(ret == 0)
+  {
+    response(cmd,RSP_OK,0);
+  }
+  else
+  {
+    response(cmd,RSP_ERROR_PARAMETER,0);
+  }
+}
+
+void cmdgetdrum(char cmd, int parameters[])
+{
+  int ret;
+    ret = lefthand.getdrum(parameters[0],parameters[1],&response_buffer[0]);
+    if(ret == 0)
+      response(cmd,RSP_OK,4);
+    else
+      response(cmd,RSP_ERROR_PARAMETER,0);
+}
+
+void cmdsetconfig(char cmd,int parameters[])
+{
+  if(parameters[0] >= NUM_OF_SYS_PARAS) 
+  {
+    response(cmd, RSP_ERROR_PARAMETER,0);
+    return;
+  }
+  sys_paras[parameters[0]]=parameters[1];
+  response(cmd,RSP_OK,0);
+}
+
+void cmdgetconfig(char cmd,int parameters[])
+{
+  if(parameters[0] >= NUM_OF_SYS_PARAS) 
+  {
+    response(cmd, RSP_ERROR_PARAMETER,0);
+    return;
+  }
+  response_buffer[0] = sys_paras[parameters[0]];
+  response(cmd,RSP_OK,1);
+}
+
+
+void cmdsetsong(char cmd,int parameters[])
+{
+  if((parameters[0] >= SONG_MAX_LENGTH) || (parameters[1] >= MAXDRUMS) )
+  {
+    response(cmd, RSP_ERROR_PARAMETER,0);
+  }
+  else
+  {
+    song_pu[parameters[0]]=parameters[1];
+    response(cmd,RSP_OK,0);
+  }
+}
+
+void cmdgetsong(char cmd, int parameters[])
+{
+  if(parameters[0] >= SONG_MAX_LENGTH) 
+  {
+    response(cmd, RSP_ERROR_PARAMETER,0);
+    return;
+  }    
+  response_buffer[0] = song_pu[parameters[0]];
+  response(cmd,RSP_OK,1);
+}

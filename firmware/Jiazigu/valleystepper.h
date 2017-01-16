@@ -1,6 +1,8 @@
 #ifndef valleystepper_h
 #define valleystepper_h
 
+#define INIT_POS 1500
+
 // library interface description
 class valleystepper {
   public:
@@ -11,8 +13,7 @@ class valleystepper {
     // mover method:
 
     bool gotarget();
-    void settarget_relative(int steps);
-    void settarget_abs(int steps);
+    int settarget_abs(int steps);
     int getpos();
     
   private:
@@ -25,9 +26,6 @@ class valleystepper {
     // motor pin numbers:
     int motor_pin_1;
     int motor_pin_2;
-
-    //state,0:init;1,qualified;2,running
-    int state;  
 
     int cur_pos;
     int target_pos;
