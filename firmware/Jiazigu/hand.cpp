@@ -92,7 +92,7 @@ int hand::setdrumbyvalue(int drum_index, int updown, int motor_index, int value)
   if (motor_index > 4) return -1;
   if (updown > 1) return -1;
 
-  if ((value < 800) || (value > 2200)) return -1;
+  if ((value < 80) || (value > 220)) return -1;
 
   drums[drum_index][updown][motor_index] = value;
   return 0;

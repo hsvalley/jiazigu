@@ -43,10 +43,10 @@ bool valleyservo::gotarget()  //run once
 
 int valleyservo::settarget_abs(int steps)
 {
-  if (steps < 800 || steps >2200) return -1;
+  if (steps < 80 || steps >220) return -1;
   target_pos = steps;
-  thisservo.write(target_pos);
-  last_step_time = millis() + min_delay * abs(target_pos - cur_pos)/10;
+  thisservo.write(target_pos*10);
+  last_step_time = millis() + min_delay * abs(target_pos - cur_pos);
   return 0;
 }
 

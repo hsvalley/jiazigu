@@ -2,7 +2,7 @@
 #define valleyservo_h
 #include <Servo.h>
 
-#define INIT_POS 1500
+#define INIT_POS 150
 
 // library interface description
 class valleyservo {
