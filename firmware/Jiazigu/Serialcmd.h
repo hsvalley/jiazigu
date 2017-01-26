@@ -2,8 +2,8 @@
 #define __SERIALCMD_H__
 
 //ASCII-BASED protocol definition
-#define CMD_START_CHAR '<'
-#define CMD_END_CHAR '>'
+#define CMD_START_CHAR '.'
+#define CMD_END_CHAR ';'
 #define CMD_SEPARE_CHAR ','
 
 #define RSP_OK '0'

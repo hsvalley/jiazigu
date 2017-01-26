@@ -33,7 +33,8 @@ class hand {
     void store(byte *thebuf);
     
   private:
-    valleystepper yaostepper;
+//    valleystepper yaostepper;
+    valleyservo yaoservo;
     valleyservo jianservo;
     valleyservo zhouservo;  
     valleyservo wanservo;  

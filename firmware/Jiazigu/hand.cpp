@@ -11,13 +11,17 @@ void hand::Init(int leftright)
 {
   if (0 == leftright)
   {
-    yaostepper.Init(2, 3, 5);
-    jianservo.Init(6, 5);
-    zhouservo.Init(7, 5);
-    wanservo.Init(8, 5);
+    yaoservo.Init(5, 1);
+    jianservo.Init(6, 1);
+    zhouservo.Init(7, 1);
+    wanservo.Init(8, 1);
   }
   else
   {
+    yaoservo.Init(12, 5);
+    jianservo.Init(9, 5);
+    zhouservo.Init(10, 5);
+    wanservo.Init(11, 5);
   }
 
   for (int i = 0; i < MAXDRUMS; i++)
@@ -31,7 +35,7 @@ int hand::moveonemotor(int motor_index, int value)
   switch (motor_index)
   {
     case 0:
-      return yaostepper.settarget_abs(value);
+      return yaoservo.settarget_abs(value);
       break;
     case 1:
       return jianservo.settarget_abs(value);
@@ -53,7 +57,7 @@ int hand::moveallmotors(int values[])
 {
   char ret;
 
-  ret = yaostepper.settarget_abs(values[0]);
+  ret = yaoservo.settarget_abs(values[0]);
   if (ret != 0) return ret;
 
   ret = jianservo.settarget_abs(values[1]); if (ret != 0) return ret;
@@ -66,7 +70,7 @@ int hand::getmotor(int motor_index)
   switch (motor_index)
   {
     case 0:
-      return yaostepper.getpos();
+      return yaoservo.getpos();
       break;
     case 1:
       return jianservo.getpos();
@@ -88,14 +92,7 @@ int hand::setdrumbyvalue(int drum_index, int updown, int motor_index, int value)
   if (motor_index > 4) return -1;
   if (updown > 1) return -1;
 
-  if (motor_index == 0)
-  {
-    if ((value < 1400) || (value > 1600)) return -1;
-  }
-  else
-  {
-    if ((value < 800) || (value > 2200)) return -1;
-  }
+  if ((value < 800) || (value > 2200)) return -1;
 
   drums[drum_index][updown][motor_index] = value;
   return 0;
@@ -106,7 +103,7 @@ int hand::setdrumbypos(int drum_index, int updown)
   if (drum_index > 7) return -1;
   if (updown > 1) return -1;
 
-  drums[drum_index][updown][0] = yaostepper.getpos();
+  drums[drum_index][updown][0] = yaoservo.getpos();
   drums[drum_index][updown][1] = jianservo.getpos();
   drums[drum_index][updown][2] = zhouservo.getpos();
   drums[drum_index][updown][3] = wanservo.getpos();
@@ -118,7 +115,7 @@ int hand::movemotorstodrum(int drum_index, int updown)
   if (drum_index > 7) return -1;
   if (updown > 1) return -1;
 
-  yaostepper.settarget_abs(drums[drum_index][updown][0]);
+  yaoservo.settarget_abs(drums[drum_index][updown][0]);
   jianservo.settarget_abs(drums[drum_index][updown][1]);
   zhouservo.settarget_abs(drums[drum_index][updown][2]);
   wanservo.settarget_abs(drums[drum_index][updown][3]);
@@ -134,13 +131,15 @@ int hand::getdrum(int drum_index, int updown, int values[])
   values[1] = drums[drum_index][updown][1];
   values[2] = drums[drum_index][updown][2];
   values[3] = drums[drum_index][updown][3];
+  
+  movemotorstodrum(drum_index,updown);
   return 0;
 }
 
 bool hand::gotarget()
 {
   bool isrunning = false;
-  isrunning |= yaostepper.gotarget();
+  isrunning |= yaoservo.gotarget();
   isrunning |= jianservo.gotarget();
   isrunning |= zhouservo.gotarget();
   isrunning |= wanservo.gotarget();

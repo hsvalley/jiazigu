@@ -64,26 +64,32 @@ int valleystepper::getpos()
   return cur_pos;
 }
 
-int valleystepper::goonestep()
+int valleystepper::calc_delay()
 {
-  unsigned long now = millis();
-  if (now - this->last_step_time >= this->min_delay)
-  {
-    //could step
-    this->cur_pos++;
-    stepMotor(this->cur_pos % 4);
-    this->last_step_time = now;
-  }
-  return this->cur_pos;
+  int fromdelay, todelay;
+  int fromstart = abs(cur_pos - start_pos);
+  int toto = abs(target_pos - cur_pos);
+
+  if (fromstart < 10) fromdelay = 20 - fromstart;
+  else fromdelay = 10;
+
+  if (toto < 10) todelay = 20 - toto;
+  else todelay = 10;
+
+  if (fromdelay > todelay) return fromdelay;
+  else return todelay;
+
 }
 
-int valleystepper::backonestep()
+int valleystepper::goonestep(boolean forward)
 {
   unsigned long now = millis();
-  if (now - this->last_step_time >= min_delay)
+//  if (now - this->last_step_time >= calc_delay())
+  if (now - this->last_step_time >= 10)
   {
     //could step
-    this->cur_pos--;
+    if(forward) this->cur_pos++;
+    else this->cur_pos--;
     stepMotor(this->cur_pos % 4);
     this->last_step_time = now;
   }
@@ -95,9 +101,9 @@ bool valleystepper::gotarget()  //run once
   bool isrunning = true;
 
   if (this->cur_pos < this->target_pos)
-    goonestep();
+    goonestep(true);
   else if (this->cur_pos > this->target_pos)
-    backonestep();
+    goonestep(false);
   else
     isrunning = false;
 
@@ -107,8 +113,9 @@ bool valleystepper::gotarget()  //run once
 
 int valleystepper::settarget_abs(int steps)
 {
-  if(steps < 1400 || steps > 1600) return -1;
+  if (steps < 1450 || steps > 1550) return -1;
   this->target_pos = steps;
+  start_pos = cur_pos;
   return 0;
 }
 

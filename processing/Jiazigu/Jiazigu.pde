@@ -109,7 +109,7 @@ cp5.get(ScrollableList.class, "baudrate_list").close();
 //controler for drums page
   lefthandservoSlider0 = cp5.addSlider("lefthandservo0")
      .setBroadcast(false)
-     .setRange(1420,1580)
+     .setRange(800,2200)
      .setValue(1500)
      .setPosition(100,20)
      .setSize(200,20)
@@ -117,7 +117,7 @@ cp5.get(ScrollableList.class, "baudrate_list").close();
      ;
   lefthandservoSlider1 = cp5.addSlider("lefthandservo1")
      .setBroadcast(false)
-     .setRange(1000,2000)
+     .setRange(800,2200)
      .setValue(1500)
      .setPosition(100,42)
      .setSize(200,20)
@@ -126,7 +126,7 @@ cp5.get(ScrollableList.class, "baudrate_list").close();
      
   lefthandservoSlider2 = cp5.addSlider("lefthandservo2")
      .setBroadcast(false)
-     .setRange(1000,2000)
+     .setRange(800,2200)
      .setValue(1500)
      .setPosition(100,64)
      .setSize(200,20)

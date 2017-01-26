@@ -1,7 +1,7 @@
 //ASCII-BASED protocol definition
   
-final static char CMD_START_CHAR = '<';
-final static char CMD_END_CHAR = '>';
+final static char CMD_START_CHAR = '.';
+final static char CMD_END_CHAR = ';';
 final static char CMD_SEPARE_CHAR = ',';
 
 final static char  RSP_OK = '0';

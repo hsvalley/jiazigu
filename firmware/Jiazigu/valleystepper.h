@@ -18,8 +18,8 @@ class valleystepper {
     
   private:
     void stepMotor(int this_step);
-    int goonestep();
-    int backonestep();
+    int goonestep(boolean forward);
+    int calc_delay();
     
     int min_delay;      // the minimam tolarent delay
 
@@ -29,6 +29,7 @@ class valleystepper {
 
     int cur_pos;
     int target_pos;
+    int start_pos;
     
     unsigned long last_step_time; // time stamp in us of when the last step was taken
 };
