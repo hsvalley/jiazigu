@@ -1,0 +1,19 @@
+{
+  "name": "Jiazigu Controller",
+  "version": "1",
+  "app": {
+    "background": {
+      "scripts": ["js/background.js"]
+    }
+  },
+  "icons": {
+    "128": "img/icon_128.png"
+  },
+  
+   "permissions": [
+    {"fileSystem": ["write", "retainEntries", "directory"]},
+    "storage",
+    "serial"
+  ], 
+  "manifest_version": 2
+}

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<!--
+Copyright 2012 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Author: Renato Mangini (mangini@chromium.org)
+Author: Luis Leao (luisleao@gmail.com)
+-->
+
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" media="all" href="css/main.css"></link>
+  <title>JiaZiGu</title>
+</head>
+<body>
+  <header>
+    <div id="expand" class="expandable">
+      <div id="status">Hover here to connect</div>
+      <div id="handler">settings</div>
+      <div class="commands">
+        <select class="serial_devices">
+        </select>
+        <button class="refresh">refresh</button><br/>
+        <button class="open">open</button>
+        <button class="close">close</button>
+        <div class="log"></div>
+      </div>
+    </div>
+    <nav>
+      <ul>
+      	<li><a id="drumlink" href="#drumlink">Drum</a></li>
+        <li><a id="songlink" href="#songlink">Song</a></li>
+      </ul>
+    </nav>
+  </header>
+  <section id="drumsec">
+    <article class="lefthand">
+      <p id="motor1"><label>Left Hand</label><br/>
+      <input class="r" type="range" min="80" max="220" value="150"/><span>150</span>
+      <input class="g" type="range" min="80" max="220"  value="150"/><span>150</span>
+      <input class="g" type="range" min="80" max="220"  value="150"/><span>150</span>
+      <input class="b" type="range" min="80" max="220"  value="150"/><span>150</span></p>
+    </article>
+    <article class="righthand">
+      <p id="motor2"><label>Right Hand</label><br/>
+      <input class="r" type="range" min="80" max="220"  value="150"/><span>150</span>
+      <input class="g" type="range" min="80" max="220"  value="150"/><span>150</span>
+      <input class="g" type="range" min="80" max="220"  value="150"/><span>150</span>
+      <input class="b" type="range" min="80" max="220"  value="150"/><span>150</span></p>
+    </article>     
+    <article class="leftfoot">
+      <p id="motor3"><label>Left Foot</label><br/>
+      <input class="b" type="range" min="80" max="220"  value="150"/><span>150</span></p>
+    </article>
+    <article class="rightfoot">
+      <p id="motor4"><label>Right Foot</label><br/>
+      <input class="b" type="range" min="80" max="220"  value="150"/><span>150</span></p>
+    </article>    
+    <article class="updowns">
+      <p><button class="ud1">Down</button></p>
+      <p><button class="ud2">Down</button></p>
+      <p><button class="ud3">Down</button></p>
+      <p><button class="ud4">Down</button></p>
+    </article>
+    <article class="alldrums"> 
+    	<p><img src="/img/total_drums.png"  alt="drums" /></p>
+    </article>  
+    <article class="drums"> 
+      <p><button class="drum1">caica</button></p>
+      <p><button class="drum2">diaoca</button></p>
+      <p><button class="drum3">dingding</button></p>
+      <p><button class="drum4">jungu</button></p>
+      <p><button class="drum5">gaotong</button></p>
+      <p><button class="drum6">zhongtong</button></p>
+      <p><button class="drum7">ditong</button></p>
+    </article>
+  </section>
+  <section id="songsec" class="hidden">
+		<div id="toolbar">
+	    <div id="new" class="toolbarbutton enabled"></div>
+	    <div id="openfile" class="toolbarbutton enabled"></div>
+	    <div id="save" class="toolbarbutton enabled"></div>
+	    <div id="saveas" class="toolbarbutton enabled"></div>
+	    <label id="speedlabel" class="toolbarlabel">Speed</label>
+	    <input id="songspeed" class="toolbartext" type="TEXT" size="4" value="80">
+	    <div id="left" class="toolbarbutton enabled"></div>
+	    <div id="right" class="toolbarbutton enabled"></div>
+	    <div id="up" class="toolbarbutton enabled"></div>
+	  	<div id="down" class="toolbarbutton enabled"></div>    
+    	<article class="tone_buttons">	    
+	    <div id="digu" class="toolbarbutton enabled"></div>
+	    <div id="jungu" class="toolbarbutton enabled"></div>
+	    <div id="gaotong" class="toolbarbutton enabled"></div>
+	    <div id="zhongtong" class="toolbarbutton enabled"></div>
+	    <div id="ditong" class="toolbarbutton enabled"></div>
+	    <div id="kaica" class="toolbarbutton enabled"></div>
+	    <div id="bica" class="toolbarbutton enabled"></div>
+	    <div id="diaoca" class="toolbarbutton enabled"></div>
+	  	<div id="dingding" class="toolbarbutton enabled"></div>
+	    <div id="kaibi" class="toolbarbutton enabled"></div>
+	    </article>
+	    <div id="delete" class="toolbarbutton enabled"></div>
+	    <div id="run" class="toolbarbutton enabled"></div>
+	    <div id="stop" class="toolbarbutton enabled"></div>
+  	</div>     
+  	<article class="song">
+				<div id="pu_flag" style="position:relative;">
+					<img src="/img/scrubber_control_pu.png"/>
+				</div>  		
+		</article>   	
+  </section>
+  <dialog id="dialog1">
+		<h1>File changed</h1>
+		<div>
+			<p>The file has been changed, save it?</p>
+			<button id="save_it">Save</button>
+			<button id="discard_it">Discard</button>
+			<button id="cancel_it">Cancel</button>
+		</div>
+	</dialog>
+  <script src="js/serial.js"></script>
+  <script src="js/drum.js"></script>
+</body>
+</html>
