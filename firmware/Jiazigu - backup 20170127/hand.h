@@ -2,18 +2,11 @@
 #define hand_h
 #include "Arduino.h"
 
+#include "valleystepper.h"
 #include "valleyservo.h"
 
 #define MAXDRUMS 8
 #define MAXMOTORS 4
-#define YAO 0
-#define JIAN 1
-#define ZHOU 2
-#define WAN 3
-
-#define UP 0
-#define DOWN 1
-
 
 class hand {
   public:
@@ -28,8 +21,9 @@ class hand {
     
     //drum related functions
     int setdrumbyvalue(int drum_index,int updown, int motor_index,int value);
+    int setdrumbypos(int drum_index,int updown);
     int getdrum(int drum_index, int updown, int values[]);
-    int movemotorstodrum(int drum_index,unsigned long finishedtime);
+    int movemotorstodrum(int drum_index,int updown);
     
     //playing function
     bool gotarget();
@@ -46,8 +40,7 @@ class hand {
     valleyservo wanservo;  
 
     //drum
-    int drums[MAXDRUMS][MAXMOTORS];
-    int daji_value[MAXMOTORS];
+    int drums[MAXDRUMS][2][MAXMOTORS];
     
 };
 

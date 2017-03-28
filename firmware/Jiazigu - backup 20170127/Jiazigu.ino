@@ -164,7 +164,19 @@ void loop()
       switch (song_running_state)
       {
         case SONG_RUNNING_BEFORE_UP:
-          lefthand.movemotorstodrum(song_pu[song_running_pos], millis() + sys_paras[0]);
+          delay(sys_paras[1]);
+          //Start UP
+          lefthand.movemotorstodrum(song_pu[song_running_pos], 0);
+          song_running_state = SONG_RUNNING_IN_UP;
+          break;
+        case SONG_RUNNING_IN_UP :
+          //finish UP
+          song_running_state = SONG_RUNNING_BEFORE_DOWN;
+          break;
+        case SONG_RUNNING_BEFORE_DOWN:
+          delay(sys_paras[0]);
+          //start DOWN
+          lefthand.movemotorstodrum(song_pu[song_running_pos], 1);
           song_running_state = SONG_RUNNING_IN_DOWN;
           break;
         case SONG_RUNNING_IN_DOWN :
@@ -188,8 +200,6 @@ void loop()
           {
             song_running_state = SONG_RUNNING_BEFORE_UP; //continue
           }
-          delay(sys_paras[1]);
-
           break;
         default:
           break;

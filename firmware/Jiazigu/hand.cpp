@@ -24,10 +24,11 @@ void hand::Init(int leftright)
     wanservo.Init(11, 5);
   }
 
-  for (int i = 0; i < MAXDRUMS; i++)
-    for (int j = 0; j < 2; j++)
-      for (int k = 0; k < 4; k++)
-        drums[i][j][k] = INIT_POS;
+  for (int i = 0; i < MAXDRUMS; i++) for (int k = 0; k < 4; k++) drums[i][k] = INIT_POS;
+  daji_value[YAO] = 0;
+  daji_value[JIAN]  = 25;
+  daji_value[ZHOU]  = -30;
+  daji_value[WAN]  = -30;
 }
 
 int hand::moveonemotor(int motor_index, int value)
@@ -35,16 +36,16 @@ int hand::moveonemotor(int motor_index, int value)
   switch (motor_index)
   {
     case 0:
-      return yaoservo.settarget_abs(value);
+      return yaoservo.settarget_abs(millis() + 500,value,value);
       break;
     case 1:
-      return jianservo.settarget_abs(value);
+      return jianservo.settarget_abs(millis() + 500,value,value);
       break;
     case 2:
-      return zhouservo.settarget_abs(value);
+      return zhouservo.settarget_abs(millis() + 500,value,value);
       break;
     case 3:
-      return wanservo.settarget_abs(value);
+      return wanservo.settarget_abs(millis() + 500,value,value);
       break;
     default:
       return -2;
@@ -57,12 +58,10 @@ int hand::moveallmotors(int values[])
 {
   char ret;
 
-  ret = yaoservo.settarget_abs(values[0]);
-  if (ret != 0) return ret;
-
-  ret = jianservo.settarget_abs(values[1]); if (ret != 0) return ret;
-  ret = zhouservo.settarget_abs(values[2]); if (ret != 0) return ret;
-  ret = wanservo.settarget_abs(values[3]); return ret;
+  ret = yaoservo.settarget_abs(millis() + 500,values[0],values[0]); if (ret != 0) return ret;
+  ret = jianservo.settarget_abs(millis() + 500,values[1],values[1]); if (ret != 0) return ret;
+  ret = zhouservo.settarget_abs(millis() + 500,values[2],values[2]); if (ret != 0) return ret;
+  ret = wanservo.settarget_abs(millis() + 500,values[3],values[3]); return ret;
 }
 
 int hand::getmotor(int motor_index)
@@ -94,31 +93,27 @@ int hand::setdrumbyvalue(int drum_index, int updown, int motor_index, int value)
 
   if ((value < 80) || (value > 220)) return -1;
 
-  drums[drum_index][updown][motor_index] = value;
+  if (updown == UP)
+  {
+    drums[drum_index][motor_index] = value;
+  }
+  else
+  {
+    drums[drum_index][motor_index] = value + daji_value[motor_index];
+  }
   return 0;
 }
 
-int hand::setdrumbypos(int drum_index, int updown)
+int hand::movemotorstodrum(int drum_index,unsigned long finishedtime)
 {
+  
   if (drum_index > 7) return -1;
-  if (updown > 1) return -1;
 
-  drums[drum_index][updown][0] = yaoservo.getpos();
-  drums[drum_index][updown][1] = jianservo.getpos();
-  drums[drum_index][updown][2] = zhouservo.getpos();
-  drums[drum_index][updown][3] = wanservo.getpos();
-  return 0;
-}
+  yaoservo.settarget_abs(finishedtime,drums[drum_index][YAO],drums[drum_index][YAO]);
+  jianservo.settarget_abs(finishedtime,drums[drum_index][JIAN],drums[drum_index][JIAN] - daji_value[JIAN]);
+  zhouservo.settarget_abs(finishedtime,drums[drum_index][ZHOU],drums[drum_index][ZHOU] - daji_value[ZHOU]);
+  wanservo.settarget_abs(finishedtime,drums[drum_index][WAN],drums[drum_index][WAN] - daji_value[WAN]);
 
-int hand::movemotorstodrum(int drum_index, int updown)
-{
-  if (drum_index > 7) return -1;
-  if (updown > 1) return -1;
-
-  yaoservo.settarget_abs(drums[drum_index][updown][0]);
-  jianservo.settarget_abs(drums[drum_index][updown][1]);
-  zhouservo.settarget_abs(drums[drum_index][updown][2]);
-  wanservo.settarget_abs(drums[drum_index][updown][3]);
   return 0;
 }
 
@@ -127,12 +122,26 @@ int hand::getdrum(int drum_index, int updown, int values[])
   if (drum_index > 7) return -1;
   if (updown > 1) return -1;
 
-  values[0] = drums[drum_index][updown][0];
-  values[1] = drums[drum_index][updown][1];
-  values[2] = drums[drum_index][updown][2];
-  values[3] = drums[drum_index][updown][3];
+
+  if (UP == updown)
+  {
+    values[YAO] = drums[drum_index][YAO];
+    values[JIAN] = drums[drum_index][JIAN];
+    values[ZHOU] = drums[drum_index][ZHOU];
+    values[WAN] = drums[drum_index][WAN];
+  }
+  else
+  {
+    values[YAO] = drums[drum_index][YAO] - daji_value[YAO];
+    values[JIAN] = drums[drum_index][JIAN] - daji_value[JIAN];
+    values[ZHOU] = drums[drum_index][ZHOU] - daji_value[ZHOU];
+    values[WAN] = drums[drum_index][WAN] - daji_value[WAN];
+  }
+  yaoservo.settarget_abs(millis() + 500,values[YAO],values[YAO]);
+  jianservo.settarget_abs(millis() + 500,values[JIAN],values[JIAN]);
+  zhouservo.settarget_abs(millis() + 500,values[ZHOU],values[ZHOU]);
+  wanservo.settarget_abs(millis() + 500,values[WAN],values[WAN]);
   
-  movemotorstodrum(drum_index,updown);
   return 0;
 }
 
