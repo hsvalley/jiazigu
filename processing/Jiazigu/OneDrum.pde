@@ -1,5 +1,5 @@
 final int NumOfServos = 4; // Constant, cannot be modified
-final int DefaultServoValue = 1500; // Constant, cannot be modified
+final int DefaultServoValue = 150; // Constant, cannot be modified
   
 
 public class oneDrum {
