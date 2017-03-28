@@ -1,0 +1,1 @@
+This is a robot who can play drums kit automatically.
